@@ -14,6 +14,8 @@ const authString = `${authKey}:${authToken}`;
 const base64AuthString = Buffer.from(authString).toString("base64");
 // console.log(base64AuthString);
 
+let serverotp;
+
 const sendSMS = async (phoneNumber, msg) => {
   const url = `https://restapi.smscountry.com/v0.1/Accounts/${authKey}/SMSes/`;
 
@@ -50,6 +52,7 @@ const sendOTP = async (req, res, next) => {
 
     const otp = Math.floor(100000 + Math.random() * 900000);
     console.log("otp", otp);
+    serverotp = otp;
 
     const message = `User Admin login OTP is${otp} - SMSCOU`;
 
@@ -67,6 +70,25 @@ const sendOTP = async (req, res, next) => {
   }
 };
 
-router.post("/user/sms", sendOTP);
+const verifyOTP = async (req, res, next) => {
+  try {
+    const {clientotp} = req.body;
+    if (clientotp === serverotp) {
+      // OTP is valid, you can proceed with the next middleware or action
+      console.log('OTP verification successful');
+      res.status(200).json({message: "OTP verified"});
+      next();
+    } else {
+      // OTP is not valid, you might want to handle this case accordingly
+      console.log('Invalid OTP');
+      res.status(400).json({ error: 'Invalid OTP' });
+    }
+  } catch (err) {
+    console.error('Error during OTP verification:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
 
+router.post("/user/sms", sendOTP);
+router.post("/user/otpverify", verifyOTP);
 module.exports = router;
