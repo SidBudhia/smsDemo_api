@@ -2,8 +2,8 @@ const express = require("express");
 const router = new express.Router();
 const axios = require("axios");
 
-const authKey = "YOUR_AUTH_KEY";
-const senderId = "YOUR_SENDER_ID";
+const authKey = process.env.AUTHKEY;
+const senderId = process.env.SENDERID;
 
 const sendSMS = async (phoneNumber, msg) => {
   const url = `https://restapi.smscountry.com/v0.1/Accounts/${authKey}/SMSes/`;
