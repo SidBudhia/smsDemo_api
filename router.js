@@ -3,33 +3,43 @@ const router = new express.Router();
 const axios = require("axios");
 
 const authKey = process.env.AUTHKEY;
+const authToken = process.env.AUTHTOKEN;
 const senderId = process.env.SENDERID;
+
+// console.log("authKey:", authKey);
+// console.log("authToken:", authToken);
+
+const authString = `${authKey}:${authToken}`;
+
+const base64AuthString = Buffer.from(authString).toString("base64");
+// console.log(base64AuthString);
 
 const sendSMS = async (phoneNumber, msg) => {
   const url = `https://restapi.smscountry.com/v0.1/Accounts/${authKey}/SMSes/`;
 
-  const options = {
-    url,
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Apikey ${authKey}`,
-    },
-    json: {
-      from: senderId,
-      to: phoneNumber,
-      text: msg,
-    },
+  const data = {
+    SenderId: senderId,
+    Number: phoneNumber,
+    Text: msg,
   };
 
   try {
-    const response = await axios.post(url, options.data, {
-      headers: options.headers,
+    const response = await axios.post(url, data, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Basic ${base64AuthString}`,
+      },
     });
     console.log("SMS Sent:", response.data);
     return response.data;
   } catch (error) {
-    console.error("Error sending SMS:", error);
+    if (error.response) {
+      console.error("Error sending SMS. API response:", error.response.data);
+    } else if (error.request) {
+      console.error("Error sending SMS. No response received.");
+    } else {
+      console.error("Error sending SMS:", error.message);
+    }
     throw error;
   }
 };
@@ -41,9 +51,11 @@ const sendOTP = async (req, res, next) => {
     const otp = Math.floor(100000 + Math.random() * 900000);
     console.log("otp", otp);
 
-    const message = `Your OTP is ${otp}. Please do not share it with anyone.`;
+    const message = `User Admin login OTP is${otp} - SMSCOU`;
 
-    await sendSMS(phoneNumber, message);
+    const result = await sendSMS(phoneNumber, message);
+
+    console.log("sms result", result);
 
     res.status(200).json({
       message: "OTP sent successfully.",
@@ -57,4 +69,4 @@ const sendOTP = async (req, res, next) => {
 
 router.post("/user/sms", sendOTP);
 
-module.exports = router; 
+module.exports = router;
